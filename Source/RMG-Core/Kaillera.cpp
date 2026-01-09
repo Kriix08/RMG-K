@@ -355,7 +355,7 @@ CORE_EXPORT void CoreSetKailleraCallbacks(
             delete[] gameListBuf;
         }
         gameListBuf = new char[s_GameList.length() + 1];
-        strcpy(gameListBuf, s_GameList.c_str());
+        memcpy(gameListBuf, s_GameList.c_str(), s_GameList.length() + 1);
         infos.gameList = gameListBuf;
 
         // Set callbacks

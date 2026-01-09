@@ -53,6 +53,7 @@
 #include <QTimer>
 #include <QDir>
 #include <QUrl>
+#include <QRegularExpression>
 
 #ifdef KCA_DRAG_DROP
 #include <KUrlMimeData>
@@ -2077,10 +2078,18 @@ void MainWindow::on_Action_Netplay_BrowseSessions(void)
     QMap<QString, CoreRomSettings> romData = this->ui_Widget_RomBrowser->GetModelData();
     for (auto it = romData.begin(); it != romData.end(); ++it)
     {
-        gameList += QString::fromStdString(it.value().GoodName) + QString(QChar('\0'));
+        QString goodName = QString::fromStdString(it.value().GoodName);
+        // Strip "(unknown rom)" suffix for better Kaillera compatibility
+        if (goodName.endsWith(" (unknown rom)"))
+        {
+            goodName = goodName.left(goodName.length() - 14);
+        }
+        gameList += goodName + QString(QChar('\0'));
     }
     gameList += QString(QChar('\0')); // Double null terminator
-    CoreSetKailleraAppInfo(appName.toStdString(), gameList.toStdString());
+    // Use toUtf8() with explicit size to preserve embedded nulls
+    QByteArray gameListBytes = gameList.toUtf8();
+    CoreSetKailleraAppInfo(appName.toStdString(), std::string(gameListBytes.constData(), gameListBytes.size()));
 
     // Create Kaillera session manager
     if (this->kailleraSessionManager != nullptr)
@@ -2201,11 +2210,71 @@ QString MainWindow::findRomByName(QString gameName)
     // Search ROM browser data for matching game name
     QMap<QString, CoreRomSettings> romData = this->ui_Widget_RomBrowser->GetModelData();
 
+    // Helper to normalize game names for comparison
+    auto normalizeGameName = [](QString name) -> QString {
+        // Remove "(unknown rom)" suffix
+        if (name.endsWith(" (unknown rom)"))
+            name = name.left(name.length() - 14);
+        // Remove common suffixes like version numbers, regions, etc.
+        name = name.remove(QRegularExpression("\\s*\\([^)]*\\)"));  // Remove (anything)
+        name = name.remove(QRegularExpression("\\s*\\[[^\\]]*\\]")); // Remove [anything]
+        name = name.remove(QRegularExpression("[^a-zA-Z0-9]")); // Keep only alphanumeric
+        return name.toLower();
+    };
+
+    // Strip "(unknown rom)" from search term
+    QString searchName = gameName;
+    if (searchName.endsWith(" (unknown rom)"))
+        searchName = searchName.left(searchName.length() - 14);
+
+    // Try exact match first (with "(unknown rom)" stripped)
     for (auto it = romData.begin(); it != romData.end(); ++it)
     {
-        if (QString::fromStdString(it.value().GoodName) == gameName)
+        QString localName = QString::fromStdString(it.value().GoodName);
+        if (localName.endsWith(" (unknown rom)"))
+            localName = localName.left(localName.length() - 14);
+
+        if (localName == searchName)
         {
-            return it.key(); // Return the file path
+            return it.key();
+        }
+    }
+
+    // Try case-insensitive match
+    for (auto it = romData.begin(); it != romData.end(); ++it)
+    {
+        QString localName = QString::fromStdString(it.value().GoodName);
+        if (localName.endsWith(" (unknown rom)"))
+            localName = localName.left(localName.length() - 14);
+
+        if (localName.compare(searchName, Qt::CaseInsensitive) == 0)
+        {
+            return it.key();
+        }
+    }
+
+    // Try normalized comparison (removes special chars, version numbers, etc.)
+    QString normalizedSearch = normalizeGameName(searchName);
+    for (auto it = romData.begin(); it != romData.end(); ++it)
+    {
+        QString localName = QString::fromStdString(it.value().GoodName);
+        QString normalizedLocal = normalizeGameName(localName);
+
+        if (normalizedLocal == normalizedSearch)
+        {
+            return it.key();
+        }
+    }
+
+    // Try substring match (if one contains the other)
+    for (auto it = romData.begin(); it != romData.end(); ++it)
+    {
+        QString localName = QString::fromStdString(it.value().GoodName);
+        QString normalizedLocal = normalizeGameName(localName);
+
+        if (normalizedLocal.contains(normalizedSearch) || normalizedSearch.contains(normalizedLocal))
+        {
+            return it.key();
         }
     }
 

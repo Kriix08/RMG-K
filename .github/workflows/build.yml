@@ -1,6 +1,10 @@
 name: RMG
 
-on: [push, pull_request]
+on:
+  push:
+    branches: ['*']
+    tags: ['v*']
+  pull_request:
 
 jobs:
   build-linux:
@@ -177,3 +181,46 @@ jobs:
         with:
           name: RMG-Setup-Windows64-${{ env.GIT_REVISION }}
           path: Bin/*.exe
+
+  release:
+    if: startsWith(github.ref, 'refs/tags/v')
+    needs: [build-linux, build-windows]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+      - name: Get version from tag
+        run: |
+          echo "VERSION=${GITHUB_REF#refs/tags/}" >> $GITHUB_ENV
+      - name: Download all artifacts
+        uses: actions/download-artifact@v5
+        with:
+          path: artifacts
+      - name: Prepare release files
+        run: |
+          mkdir -p release
+
+          # Find and move Linux AppImage
+          find artifacts -name "*.AppImage" -exec cp {} release/ \;
+
+          # Zip Windows portable build
+          if [ -d "artifacts/RMG-Portable-Windows64-${{ env.VERSION }}" ]; then
+            cd "artifacts/RMG-Portable-Windows64-${{ env.VERSION }}"
+            zip -r "../../release/RMG-Portable-Windows64-${{ env.VERSION }}.zip" .
+            cd ../..
+          fi
+
+          # Copy Windows installer
+          find artifacts -name "RMG-Setup*.exe" -exec cp {} release/ \;
+
+          ls -la release/
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: release/*
+          generate_release_notes: true
+          draft: false
+          prerelease: ${{ contains(env.VERSION, '-') }}

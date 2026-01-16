@@ -62,11 +62,11 @@ void ControllerImageWidget::SetDeadzone(int value)
     }
 }
 
-void ControllerImageWidget::SetSensitivity(int value)
+void ControllerImageWidget::SetRange(int value)
 {
-    if (this->sensitivityValue != value)
+    if (this->rangeValue != value)
     {
-        this->sensitivityValue = value;
+        this->rangeValue = value;
         this->needImageUpdate = true;
     }
 }
@@ -167,31 +167,32 @@ void ControllerImageWidget::paintEvent(QPaintEvent *event)
     // we'll move the analog stick by a percentage
     // of the total width/height from the image
     const double absoluteMaxOffset = (static_cast<double>(height * 0.114) / 2.0);
-    // slope as in line gradient
-    const double offsetSlope = absoluteMaxOffset / 100;
-    // take sensitivity into account
-    const double sensitivityFactor = this->sensitivityValue / 100.0;
-    const double sensitivityAdjustedMaxOffset = absoluteMaxOffset * std::min(sensitivityFactor, 1.0);
-    const double offsetDeadzone = this->deadzoneValue * sensitivityFactor * offsetSlope;
-    double offsetx = this->xAxisState * sensitivityFactor * offsetSlope;
-    double offsety = this->yAxisState * sensitivityFactor * offsetSlope;
-    const double offsetDist = std::hypot(offsetx, offsety);
 
-    // take deadzone into account
-    // deadzone grows with sensitivity such that the deadzone
-    // is always a percentage of the real stick range
-    if (offsetDist <= offsetDeadzone)
-    {
-        offsetx = 0;
-        offsety = 0;
-    }
+    // Match actual input processing: independent per-axis scaling with deadzone
+    // Input is -100 to 100, normalize to -1 to 1
+    const double inputX = this->xAxisState / 100.0;
+    const double inputY = this->yAxisState / 100.0;
+    const double deadzone = this->deadzoneValue / 100.0;
 
-    // take circle range into account
-    if (offsetDist > sensitivityAdjustedMaxOffset)
-    {
-        offsetx = (offsetx / offsetDist) * sensitivityAdjustedMaxOffset;
-        offsety = (offsety / offsetDist) * sensitivityAdjustedMaxOffset;
-    }
+    // Scale each axis independently (same as main.cpp scale_axis)
+    auto scaleAxis = [deadzone](double input) -> double {
+        const double inputAbs = std::abs(input);
+        if (inputAbs <= deadzone)
+        {
+            return 0.0;
+        }
+        // (input - deadzone) / (1 - deadzone) gives 0-1 range after deadzone
+        const double scaled = (inputAbs - deadzone) / (1.0 - deadzone);
+        return (input >= 0) ? scaled : -scaled;
+    };
+
+    // Get scaled output (-1 to 1 representing N64 output range)
+    const double scaledX = scaleAxis(inputX);
+    const double scaledY = scaleAxis(inputY);
+
+    // Convert to visual offset
+    double offsetx = scaledX * absoluteMaxOffset;
+    double offsety = scaledY * absoluteMaxOffset;
 
     // adjust rect with offset
     rectF.adjust(

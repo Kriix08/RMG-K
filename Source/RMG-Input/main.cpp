@@ -79,7 +79,7 @@ struct InputProfile
 {
     bool PluggedIn    = false;
     double DeadzoneValue = 0.0;
-    double RangeValue = 66.0;  // 0-100, default 66 for real N64 range
+    double RangeValue = 67.0;  // 0-100, default 67 for real N64 range
 
     N64ControllerPak ControllerPak = N64ControllerPak::None;
 
@@ -881,22 +881,22 @@ static double get_axis_state(InputProfile* profile, const InputMapping* inputMap
 }
 
 // Calculate N64 max axis value based on range setting (0-100)
-// At 66%: max = 85 (stock N64 controller)
+// At 67%: max = 85 (stock N64 controller)
 // At 100%: max = 127 (protocol max)
 static double get_n64_max(const double range)
 {
-    constexpr double REAL_N64_RANGE = 66.0;
+    constexpr double REAL_N64_RANGE = 67.0;
     constexpr double REAL_N64_MAX = 85.0;
     constexpr double PROTOCOL_MAX = 127.0;
 
     if (range <= REAL_N64_RANGE)
     {
-        // Below 66%: scale down proportionally from stock N64 value
+        // Below 67%: scale down proportionally from stock N64 value
         return REAL_N64_MAX * (range / REAL_N64_RANGE);
     }
     else
     {
-        // Above 66%: interpolate between stock N64 and protocol max
+        // Above 67%: interpolate between stock N64 and protocol max
         const double t = (range - REAL_N64_RANGE) / (100.0 - REAL_N64_RANGE);
         return REAL_N64_MAX + t * (PROTOCOL_MAX - REAL_N64_MAX);
     }
@@ -1349,7 +1349,7 @@ EXPORT void CALL GetKeys(int Control, BUTTONS* Keys)
     inputX = get_axis_state(profile, &profile->AnalogStick_Right, 1, inputX, useButtonMapping);
 
     // Scale each axis independently (like USBtoN64v2)
-    // Range determines the maximum output: 66% = 85, 100% = 127
+    // Range determines the maximum output: 67% = 85, 100% = 127
     const double deadzone = profile->DeadzoneValue;
     const double n64Max = get_n64_max(profile->RangeValue);
 

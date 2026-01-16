@@ -31,8 +31,8 @@ private:
     int yAxisState = 0;
     // deadzone value, 0-100
     int deadzoneValue = 0;
-    // range value, 0-100 (66 = real N64 range)
-    int rangeValue = 66;
+    // range value, 0-100 (67 = real N64 range)
+    int rangeValue = 67;
 
     bool needImageUpdate = false;
 public:

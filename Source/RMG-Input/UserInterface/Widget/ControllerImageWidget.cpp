@@ -167,30 +167,32 @@ void ControllerImageWidget::paintEvent(QPaintEvent *event)
     // we'll move the analog stick by a percentage
     // of the total width/height from the image
     const double absoluteMaxOffset = (static_cast<double>(height * 0.114) / 2.0);
-    // slope as in line gradient
-    const double offsetSlope = absoluteMaxOffset / 100;
-    // visual maximum is fixed - the stick can't visually go outside its housing
-    const double visualMaxOffset = absoluteMaxOffset;
-    const double offsetDeadzone = this->deadzoneValue * offsetSlope;
-    // Visual shows physical stick position (range only affects output values to emulator)
-    double offsetx = this->xAxisState * offsetSlope;
-    double offsety = this->yAxisState * offsetSlope;
-    double offsetDist = std::hypot(offsetx, offsety);
 
-    // take deadzone into account
-    if (offsetDist <= offsetDeadzone)
-    {
-        offsetx = 0;
-        offsety = 0;
-        offsetDist = 0;
-    }
+    // Match actual input processing: independent per-axis scaling with deadzone
+    // Input is -100 to 100, normalize to -1 to 1
+    const double inputX = this->xAxisState / 100.0;
+    const double inputY = this->yAxisState / 100.0;
+    const double deadzone = this->deadzoneValue / 100.0;
 
-    // clamp to visual maximum
-    if (offsetDist > visualMaxOffset)
-    {
-        offsetx = (offsetx / offsetDist) * visualMaxOffset;
-        offsety = (offsety / offsetDist) * visualMaxOffset;
-    }
+    // Scale each axis independently (same as main.cpp scale_axis)
+    auto scaleAxis = [deadzone](double input) -> double {
+        const double inputAbs = std::abs(input);
+        if (inputAbs <= deadzone)
+        {
+            return 0.0;
+        }
+        // (input - deadzone) / (1 - deadzone) gives 0-1 range after deadzone
+        const double scaled = (inputAbs - deadzone) / (1.0 - deadzone);
+        return (input >= 0) ? scaled : -scaled;
+    };
+
+    // Get scaled output (-1 to 1 representing N64 output range)
+    const double scaledX = scaleAxis(inputX);
+    const double scaledY = scaleAxis(inputY);
+
+    // Convert to visual offset
+    double offsetx = scaledX * absoluteMaxOffset;
+    double offsety = scaledY * absoluteMaxOffset;
 
     // adjust rect with offset
     rectF.adjust(

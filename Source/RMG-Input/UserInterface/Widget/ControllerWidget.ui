@@ -565,7 +565,7 @@
        <item>
         <widget class="QGroupBox" name="analogStickRangeGroupBox">
          <property name="title">
-          <string>Analog Stick Range: 67%</string>
+          <string>Analog Stick Range: 66%</string>
          </property>
          <layout class="QVBoxLayout" name="verticalLayout_15">
           <item>
@@ -583,7 +583,7 @@
              <number>100</number>
             </property>
             <property name="value">
-             <number>67</number>
+             <number>66</number>
             </property>
             <property name="orientation">
              <enum>Qt::Orientation::Horizontal</enum>

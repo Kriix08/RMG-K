@@ -22,8 +22,8 @@ This allows the users to set their own frame delay, previously called ping spoof
 
 ### Improved Analog Stick Handling
 RMG-Input now uses independent per-axis scaling similar to the [USBtoN64v2](https://github.com/Ownasaurus/USBtoN64v2) adapter and N-Rage input plugin:
-- Configurable range slider (0-100%) with "Real N64 Range" checkbox (67% = stock N64 max of 85)
-- 100% range outputs protocol maximum (127) for games that benefit from extended range
+- Configurable range slider (0-100%) with default 66% to match N-Rage
+- Linear scale: 100% = 127 (protocol max)
 - Per-axis deadzone handling instead of circular deadzone
 
 

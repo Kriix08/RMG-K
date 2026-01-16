@@ -760,11 +760,11 @@ void ControllerWidget::on_analogStickRangeSlider_valueChanged(int value)
 
 void ControllerWidget::on_realN64RangeCheckBox_toggled(bool checked)
 {
-    // When checked, lock slider to 67% (real N64 range)
+    // When checked, lock slider to 66% (matches N-Rage default)
     this->analogStickRangeSlider->setEnabled(!checked);
     if (checked)
     {
-        this->analogStickRangeSlider->setValue(67);
+        this->analogStickRangeSlider->setValue(66);
     }
 }
 
@@ -1899,7 +1899,7 @@ void ControllerWidget::SaveDefaultSettings()
     CoreSettingsSetValue(SettingsID::Input_DevicePath, section, std::string(""));
     CoreSettingsSetValue(SettingsID::Input_DeviceSerial, section, std::string(""));
     CoreSettingsSetValue(SettingsID::Input_Deadzone, section, 9);
-    CoreSettingsSetValue(SettingsID::Input_Range, section, 67);
+    CoreSettingsSetValue(SettingsID::Input_Range, section, 66);
     CoreSettingsSetValue(SettingsID::Input_RealN64Range, section, true);
     CoreSettingsSetValue(SettingsID::Input_Pak, section, 0);
     CoreSettingsSetValue(SettingsID::Input_RemoveDuplicateMappings, section, true);

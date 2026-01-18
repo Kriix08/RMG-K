@@ -591,7 +591,7 @@ static l_Setting get_setting(SettingsID settingId)
         setting = {SETTING_SECTION_AUDIO, "SecondaryBufferSize", 1024};
         break;
     case SettingsID::Audio_Resampler:
-        setting = {SETTING_SECTION_AUDIO, "Resampler", std::string("src-linear")};
+        setting = {SETTING_SECTION_AUDIO, "Resampler", std::string("trivial")};
         break;
     case SettingsID::Audio_Volume:
         setting = {SETTING_SECTION_AUDIO, "Volume", 100};

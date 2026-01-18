@@ -31,9 +31,9 @@
 #define REGION_LEN 18
 
 #ifdef _WIN32
-#define CACHE_FILE_MAGIC "RMGCoreHeaderAndSettingsCacheWindows_09"
+#define CACHE_FILE_MAGIC "RMGCoreHeaderAndSettingsCacheWindows_10"
 #else // Linux
-#define CACHE_FILE_MAGIC "RMGCoreHeaderAndSettingsCacheLinux_09"
+#define CACHE_FILE_MAGIC "RMGCoreHeaderAndSettingsCacheLinux_10"
 #endif // _WIN32
 #define CACHE_FILE_ITEMS_MAX 250000
 

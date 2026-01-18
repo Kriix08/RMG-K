@@ -69,7 +69,7 @@ void Config::resetToDefaults()
 	graphics2D.bgMode = BGMode::bgStripped;
 	graphics2D.enableTexCoordBounds = 0;
 
-	frameBufferEmulation.enable = 1;
+	frameBufferEmulation.enable = 0;
 	frameBufferEmulation.copyDepthToRDRAM = cdSoftwareRender;
 	frameBufferEmulation.copyFromRDRAM = 0;
 	frameBufferEmulation.copyAuxToRDRAM = 0;

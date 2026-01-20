@@ -238,6 +238,8 @@ static void apply_coresettings_overlay(void)
     CoreSettingsSetValue(SettingsID::Core_SiDmaDuration, CoreSettingsGetIntValue(SettingsID::CoreOverlay_SiDmaDuration));
     CoreSettingsSetValue(SettingsID::Core_SaveFileNameFormat, CoreSettingsGetIntValue(SettingsID::CoreOverLay_SaveFileNameFormat));
     CoreSettingsSetValue(SettingsID::Core_GbCameraVideoCaptureBackend1, CoreSettingsGetStringValue(SettingsID::CoreOverlay_GbCameraVideoCaptureBackend1));
+    // Reset DisableSaveFileLoading to default (false) - Kaillera will override this later if needed
+    CoreSettingsSetValue(SettingsID::Core_DisableSaveFileLoading, false);
 }
 
 static void apply_game_coresettings_overlay(void)
@@ -276,10 +278,9 @@ static void apply_kaillera_deterministic_settings(void)
     // When enabled, interrupt timing varies randomly which causes desync
     CoreSettingsSetValue(SettingsID::Core_RandomizeInterrupt, false);
 
-    // Use pure interpreter for maximum determinism (slower but more reliable)
-    // Dynamic recompiler can have timing variations between different CPUs
+    // Use dynamic recompiler for best performance
     // Value 0 = Pure Interpreter, 1 = Cached Interpreter, 2 = Dynamic Recompiler
-    CoreSettingsSetValue(SettingsID::Core_CPU_Emulator, 0);
+    CoreSettingsSetValue(SettingsID::Core_CPU_Emulator, 2);
 
     // Set consistent CountPerOp values for deterministic timing
     CoreSettingsSetValue(SettingsID::Core_CountPerOp, 0);
@@ -287,6 +288,14 @@ static void apply_kaillera_deterministic_settings(void)
 
     // Set consistent SI DMA duration
     CoreSettingsSetValue(SettingsID::Core_SiDmaDuration, -1);
+
+    // Force extra memory enabled (8MB expansion pak) for consistent memory layout
+    // Different memory configurations between players causes desync
+    CoreSettingsSetValue(SettingsID::Core_DisableExtraMem, false);
+
+    // Disable save file loading so all players start with fresh/empty saves
+    // This prevents desync from players having different in-game settings saved
+    CoreSettingsSetValue(SettingsID::Core_DisableSaveFileLoading, true);
 
     // Force Static Interpreter RSP plugin (cxd4) for maximum determinism
     // HLE RSP has timing approximations, paraLLEl uses GPU which can vary between hardware

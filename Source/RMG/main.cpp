@@ -20,6 +20,7 @@
 #ifdef _WIN32
 #include <Windows.h>
 #include <Dbghelp.h>
+#include <ShObjIdl.h>
 #include <wchar.h>
 #else
 #include <signal.h>
@@ -134,6 +135,10 @@ int main(int argc, char **argv)
     // we'll install a crash handler and
     // write out a minidump there
     SetUnhandledExceptionFilter(exception_handler);
+
+    // Set AppUserModelID for Windows taskbar grouping
+    // This ensures Kaillera dialog windows are grouped with the main RMG-K window
+    SetCurrentProcessExplicitAppUserModelID(L"RMG-K.RMG-K");
 #else
     // on Linux we need to install signal handlers,
     // so we can exit cleanly when the user presses

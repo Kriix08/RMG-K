@@ -20,21 +20,30 @@ This is a fork of RMG with Kaillera netplay support.
 
 #### Drop Actually Works!
 - Clicking Drop will stop emulation (if player 1 does it first, it will stop emulation for everyone. Everyone must still click drop
-- After all players drop, the room owner is able to restart emulation for everyone
-
-  
+- After all players drop, the room owner is able to restart emulation for everyon 
 
 #### General Features
 - Timestamps
 - Direct Messaging (with colors)
+#### Static Netplay Settings
+FOR NOW, the following settings are hard coded when a user starts a netplay session:
 
+| Setting | Local Play | Kaillera Netplay |
+|---------|------------|------------------|
+| RandomizeInterrupt | true (random) | false (deterministic) |
+| CPU_Emulator | User's choice (default 2) | 2 (dynarec) |
+| CountPerOp | ROM database / overlay | 0 (use ROM database) |
+| CountPerOpDenomPot | 0 | 0 |
+| SiDmaDuration | -1 | -1 |
+| DisableExtraMem | User's choice | false (8MB enabled) |
+| DisableSaveFileLoading | false (loads saves) | true (fresh saves) |
+| RSP_Plugin | User's choice | cxd4 forced |
 
 ## Input
 ### Yep, it's got raphnet support.
 
-
 ### RMG-Input (pronounced Nrage)
-RMG-Input was changed so it now uses independent per-axis scaling similar to the [USBtoN64v2](https://github.com/Ownasaurus/USBtoN64v2) adapter and N-Rage input plugin:
+RMG-Input was changed so it now uses independent per-axis scaling similar to the Ownasaurus [USBtoN64v2](https://github.com/Ownasaurus/USBtoN64v2) adapter and N-Rage input plugin:
 - Configurable range slider (0-100%) with default 66% to match N-Rage
 - Linear scale: 100% = 127 (protocol max)
 - Per-axis deadzone handling instead of circular deadzone

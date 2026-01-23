@@ -464,6 +464,26 @@ enum class SettingsID
     GCAInput_CButtonTreshold,
     GCAInput_TriggerTreshold,
     GCAInput_SwapZL,
+    GCAInput_Port1Enabled,
+    GCAInput_Port2Enabled,
+    GCAInput_Port3Enabled,
+    GCAInput_Port4Enabled,
+
+    // GCA Button Mapping Settings
+    GCAInput_Map_A,
+    GCAInput_Map_B,
+    GCAInput_Map_Start,
+    GCAInput_Map_Z,
+    GCAInput_Map_L,
+    GCAInput_Map_R,
+    GCAInput_Map_DpadUp,
+    GCAInput_Map_DpadDown,
+    GCAInput_Map_DpadLeft,
+    GCAInput_Map_DpadRight,
+    GCAInput_Map_CUp,
+    GCAInput_Map_CDown,
+    GCAInput_Map_CLeft,
+    GCAInput_Map_CRight,
 
     Invalid
 };

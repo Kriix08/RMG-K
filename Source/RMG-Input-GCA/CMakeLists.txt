@@ -14,7 +14,10 @@ find_package(PkgConfig REQUIRED)
 pkg_check_modules(LIBUSB1 REQUIRED libusb-1.0)
 
 set(RMG_INPUT_GCA_SOURCES
+    Adapter.hpp
+    GCInput.hpp
     UserInterface/MainDialog.cpp
+    UserInterface/MainDialog.hpp
     UserInterface/MainDialog.ui
     main.cpp
 )

@@ -18,10 +18,14 @@
 #include <RMG-Core/Settings.hpp>
 #include <libusb.h>
 
+#include "Adapter.hpp"
+#include "GCInput.hpp"
 #include "UserInterface/MainDialog.hpp"
 
+#include <algorithm>
 #include <atomic>
 #include <chrono>
+#include <cmath>
 #include <thread>
 #include <array>
 #include <mutex>
@@ -53,50 +57,9 @@ struct SettingsProfile
     double TriggerTreshold = 0.5;
     double CButtonTreshold = 0.4;
 
-    bool SwapZL = false;
-};
+    bool PortEnabled[NUM_CONTROLLERS] = {true, true, true, true};
 
-struct GameCubeAdapterControllerState
-{
-    uint8_t Status;
-
-    union
-    {
-        uint8_t Buttons1;
-        struct
-        {
-            bool A : 1;
-            bool B : 1;
-            bool X : 1;
-            bool Y : 1;
-
-            bool DpadLeft  : 1;
-            bool DpadRight : 1;
-            bool DpadDown  : 1;
-            bool DpadUp    : 1;
-        };
-    };
-    
-
-    union
-    {
-        uint8_t Buttons2;
-        struct
-        {
-            bool Start : 1;
-            bool Z : 1;
-            bool R : 1;
-            bool L : 1;
-        };
-    };
-
-    uint8_t LeftStickX;
-    uint8_t LeftStickY;
-    uint8_t RightStickX;
-    uint8_t RightStickY;
-
-    uint8_t LeftTrigger;
-    uint8_t RightTrigger;
+    GCButtonMapping Mapping;
 };
 
 //
@@ -114,6 +77,13 @@ static std::mutex l_ControllerStateMutex;
 static std::array<GameCubeAdapterControllerState, 4> l_ControllerState;
 static std::thread l_PollThread;
 static SettingsProfile l_Settings = {0};
+
+// Maps Control index (0-3) to physical adapter port index (0-3).
+// -1 means no controller mapped to this Control slot.
+static std::array<int, NUM_CONTROLLERS> l_ControlToPort = {-1, -1, -1, -1};
+
+// Config polling flag (true when config dialog started the poll thread)
+static bool l_ConfigPollingStarted = false;
 
 // mupen64plus debug callback
 static void (*l_DebugCallback)(void *, int, const char *) = nullptr;
@@ -309,19 +279,101 @@ static void load_settings(void)
     l_Settings.SensitivityValue = static_cast<double>(CoreSettingsGetIntValue(SettingsID::GCAInput_Sensitivity)) / 100.0;
     l_Settings.CButtonTreshold = static_cast<double>(CoreSettingsGetIntValue(SettingsID::GCAInput_CButtonTreshold)) / 100.0;
     l_Settings.TriggerTreshold = static_cast<double>(CoreSettingsGetIntValue(SettingsID::GCAInput_TriggerTreshold)) / 100.0;
-    l_Settings.SwapZL = CoreSettingsGetBoolValue(SettingsID::GCAInput_SwapZL);
+    l_Settings.PortEnabled[0] = CoreSettingsGetBoolValue(SettingsID::GCAInput_Port1Enabled);
+    l_Settings.PortEnabled[1] = CoreSettingsGetBoolValue(SettingsID::GCAInput_Port2Enabled);
+    l_Settings.PortEnabled[2] = CoreSettingsGetBoolValue(SettingsID::GCAInput_Port3Enabled);
+    l_Settings.PortEnabled[3] = CoreSettingsGetBoolValue(SettingsID::GCAInput_Port4Enabled);
+
+    l_Settings.Mapping.A       = static_cast<GCInput>(CoreSettingsGetIntValue(SettingsID::GCAInput_Map_A));
+    l_Settings.Mapping.B       = static_cast<GCInput>(CoreSettingsGetIntValue(SettingsID::GCAInput_Map_B));
+    l_Settings.Mapping.Start   = static_cast<GCInput>(CoreSettingsGetIntValue(SettingsID::GCAInput_Map_Start));
+    l_Settings.Mapping.Z       = static_cast<GCInput>(CoreSettingsGetIntValue(SettingsID::GCAInput_Map_Z));
+    l_Settings.Mapping.L       = static_cast<GCInput>(CoreSettingsGetIntValue(SettingsID::GCAInput_Map_L));
+    l_Settings.Mapping.R       = static_cast<GCInput>(CoreSettingsGetIntValue(SettingsID::GCAInput_Map_R));
+    l_Settings.Mapping.DpadUp    = static_cast<GCInput>(CoreSettingsGetIntValue(SettingsID::GCAInput_Map_DpadUp));
+    l_Settings.Mapping.DpadDown  = static_cast<GCInput>(CoreSettingsGetIntValue(SettingsID::GCAInput_Map_DpadDown));
+    l_Settings.Mapping.DpadLeft  = static_cast<GCInput>(CoreSettingsGetIntValue(SettingsID::GCAInput_Map_DpadLeft));
+    l_Settings.Mapping.DpadRight = static_cast<GCInput>(CoreSettingsGetIntValue(SettingsID::GCAInput_Map_DpadRight));
+    l_Settings.Mapping.CUp     = static_cast<GCInput>(CoreSettingsGetIntValue(SettingsID::GCAInput_Map_CUp));
+    l_Settings.Mapping.CDown   = static_cast<GCInput>(CoreSettingsGetIntValue(SettingsID::GCAInput_Map_CDown));
+    l_Settings.Mapping.CLeft   = static_cast<GCInput>(CoreSettingsGetIntValue(SettingsID::GCAInput_Map_CLeft));
+    l_Settings.Mapping.CRight  = static_cast<GCInput>(CoreSettingsGetIntValue(SettingsID::GCAInput_Map_CRight));
 }
 
-static double apply_deadzone(const double input, const double deadzone)
+static int scale_axis(const double input, const double deadzone, const double n64Max)
 {
-    const double inputAbsolute = std::abs(input) / INT8_MAX;
+    const double inputAbs = std::abs(input);
 
-    if (inputAbsolute <= deadzone)
+    if (inputAbs <= deadzone)
     {
         return 0;
     }
 
-    return input;
+    const double deadzoneRelation = 1.0 / (1.0 - deadzone);
+    const double scaled = (inputAbs - deadzone) * deadzoneRelation * n64Max;
+
+    const int result = static_cast<int>(std::min(scaled, n64Max));
+    return (input >= 0) ? result : -result;
+}
+
+//
+// Adapter Accessor Functions (for config UI)
+//
+
+bool GCA_StartConfigPolling(void)
+{
+    // If poll thread is already running, nothing to do
+    if (l_PollThreadRunning.load())
+    {
+        return true;
+    }
+
+    if (!l_UsbInitialized)
+    {
+        if (!usb_init())
+        {
+            return false;
+        }
+    }
+
+    if (!gca_init())
+    {
+        return false;
+    }
+
+    l_PollThread = std::thread(gca_poll_thread);
+    l_ConfigPollingStarted = true;
+
+    // Wait for initial state
+    while (!l_PolledState.load())
+    {
+        std::this_thread::sleep_for(std::chrono::milliseconds(5));
+    }
+
+    return true;
+}
+
+void GCA_StopConfigPolling(void)
+{
+    if (!l_ConfigPollingStarted)
+    {
+        return;
+    }
+
+    if (l_PollThread.joinable())
+    {
+        l_PollThreadRunning.store(false);
+        l_PollThread.join();
+    }
+
+    gca_quit();
+    l_ConfigPollingStarted = false;
+}
+
+GameCubeAdapterControllerState GCA_GetControllerState(int port)
+{
+    std::lock_guard<std::mutex> lock(l_ControllerStateMutex);
+    return l_ControllerState[port];
 }
 
 //
@@ -410,8 +462,16 @@ EXPORT void CALL ControllerCommand(int Control, unsigned char* Command)
 
 EXPORT void CALL GetKeys(int Control, BUTTONS* Keys)
 {
+    // Use the port mapping to translate Control index to physical port
+    int port = l_ControlToPort[Control];
+    if (port < 0)
+    {
+        Keys->Value = 0;
+        return;
+    }
+
     l_ControllerStateMutex.lock();
-    GameCubeAdapterControllerState state = l_ControllerState[Control];
+    GameCubeAdapterControllerState state = l_ControllerState[port];
     l_ControllerStateMutex.unlock();
 
     if (!state.Status)
@@ -420,39 +480,35 @@ EXPORT void CALL GetKeys(int Control, BUTTONS* Keys)
         return;
     }
 
-    Keys->A_BUTTON = state.A;
-    Keys->B_BUTTON = state.B;
-    Keys->START_BUTTON = state.Start;
-    Keys->L_DPAD = state.DpadLeft;
-    Keys->R_DPAD = state.DpadRight;
-    Keys->D_DPAD = state.DpadDown;
-    Keys->U_DPAD = state.DpadUp;
+    const GCButtonMapping& map = l_Settings.Mapping;
+    const double trigT = l_Settings.TriggerTreshold;
+    const double cT = l_Settings.CButtonTreshold;
 
-    const int triggerTreshold = INT8_MAX * l_Settings.TriggerTreshold;
-    const int cStickTreshold  = INT8_MAX * l_Settings.CButtonTreshold;
-    const int8_t cX = static_cast<int8_t>(state.RightStickX + 128);
-    const int8_t cY = static_cast<int8_t>(state.RightStickY + 128);
+    Keys->A_BUTTON     = isGCInputActive(state, map.A, trigT, cT);
+    Keys->B_BUTTON     = isGCInputActive(state, map.B, trigT, cT);
+    Keys->START_BUTTON = isGCInputActive(state, map.Start, trigT, cT);
+    Keys->Z_TRIG       = isGCInputActive(state, map.Z, trigT, cT);
+    Keys->L_TRIG       = isGCInputActive(state, map.L, trigT, cT);
+    Keys->R_TRIG       = isGCInputActive(state, map.R, trigT, cT);
+    Keys->U_DPAD       = isGCInputActive(state, map.DpadUp, trigT, cT);
+    Keys->D_DPAD       = isGCInputActive(state, map.DpadDown, trigT, cT);
+    Keys->L_DPAD       = isGCInputActive(state, map.DpadLeft, trigT, cT);
+    Keys->R_DPAD       = isGCInputActive(state, map.DpadRight, trigT, cT);
+    Keys->U_CBUTTON    = isGCInputActive(state, map.CUp, trigT, cT);
+    Keys->D_CBUTTON    = isGCInputActive(state, map.CDown, trigT, cT);
+    Keys->L_CBUTTON    = isGCInputActive(state, map.CLeft, trigT, cT);
+    Keys->R_CBUTTON    = isGCInputActive(state, map.CRight, trigT, cT);
 
-    Keys->R_TRIG = state.RightTrigger > triggerTreshold;
-    Keys->L_TRIG = l_Settings.SwapZL ? state.Z : (state.LeftTrigger > triggerTreshold);
-    Keys->Z_TRIG = l_Settings.SwapZL ? (state.LeftTrigger > triggerTreshold) : state.Z;
-
-    Keys->L_CBUTTON = cX < -cStickTreshold;
-    Keys->R_CBUTTON = cX > cStickTreshold;
-    Keys->U_CBUTTON = cY > cStickTreshold;
-    Keys->D_CBUTTON = cY < -cStickTreshold;
-
+    // Analog stick (not remappable)
     const int8_t x = static_cast<int8_t>(state.LeftStickX + 128);
     const int8_t y = static_cast<int8_t>(state.LeftStickY + 128);
 
-    double modX = (static_cast<double>(x) / static_cast<double>(INT8_MAX)) * N64_AXIS_PEAK * l_Settings.SensitivityValue;
-    double modY = (static_cast<double>(y) / static_cast<double>(INT8_MAX)) * N64_AXIS_PEAK * l_Settings.SensitivityValue;
+    const double inputX = static_cast<double>(x) / static_cast<double>(INT8_MAX);
+    const double inputY = static_cast<double>(y) / static_cast<double>(INT8_MAX);
+    const double n64Max = N64_AXIS_PEAK * l_Settings.SensitivityValue;
 
-    modX = apply_deadzone(modX, l_Settings.DeadzoneValue);
-    modY = apply_deadzone(modY, l_Settings.DeadzoneValue);
-
-    Keys->X_AXIS = static_cast<int>(modX);
-    Keys->Y_AXIS = static_cast<int>(modY);
+    Keys->X_AXIS = scale_axis(inputX, l_Settings.DeadzoneValue, n64Max);
+    Keys->Y_AXIS = scale_axis(inputY, l_Settings.DeadzoneValue, n64Max);
 }
 
 EXPORT void CALL InitiateControllers(CONTROL_INFO ControlInfo)
@@ -471,11 +527,24 @@ EXPORT void CALL InitiateControllers(CONTROL_INFO ControlInfo)
         std::this_thread::sleep_for(std::chrono::milliseconds(5));
     }
 
+    // Map enabled+connected physical ports to Control slots sequentially.
+    // This ensures netplay works regardless of which adapter port the
+    // controller is plugged into (e.g. port 4 maps to Control 0).
     l_ControllerStateMutex.lock();
+    l_ControlToPort = {-1, -1, -1, -1};
+    int controlSlot = 0;
     for (int i = 0; i < NUM_CONTROLLERS; i++)
     {
-        GameCubeAdapterControllerState state = l_ControllerState[i];
-        ControlInfo.Controls[i].Present = (state.Status > 0) ? 1 : 0;
+        if (l_Settings.PortEnabled[i] && l_ControllerState[i].Status > 0)
+        {
+            l_ControlToPort[controlSlot] = i;
+            controlSlot++;
+        }
+    }
+
+    for (int i = 0; i < NUM_CONTROLLERS; i++)
+    {
+        ControlInfo.Controls[i].Present = (l_ControlToPort[i] >= 0) ? 1 : 0;
     }
     l_ControllerStateMutex.unlock();
 

@@ -12,6 +12,13 @@
 
 #include <QDialog>
 #include <QAbstractButton>
+#include <QPushButton>
+#include <QTimer>
+#include <array>
+
+#include <RMG-Core/Settings.hpp>
+#include "../GCInput.hpp"
+#include "../Adapter.hpp"
 
 #include "ui_MainDialog.h"
 
@@ -31,7 +38,27 @@ private slots:
     void on_sensitivitySlider_valueChanged(int value);
     void on_triggerTresholdSlider_valueChanged(int value);
     void on_cButtonTresholdSlider_valueChanged(int value);
-    
+
+    void onMappingButtonClicked(int index);
+    void onClearButtonClicked(int index);
+    void onPollTimerTimeout(void);
+
+private:
+    void loadMappings(void);
+    void saveMappings(void);
+    void setDefaultMappings(void);
+    void updateMappingButtons(void);
+    void clearDuplicateMapping(int assignedIndex, GCInput input);
+
+    std::array<QPushButton*, N64_BUTTON_COUNT> m_MappingButtons;
+    std::array<QPushButton*, N64_BUTTON_COUNT> m_ClearButtons;
+    std::array<GCInput, N64_BUTTON_COUNT> m_Mappings;
+    std::array<SettingsID, N64_BUTTON_COUNT> m_MappingSettingsIDs;
+
+    QTimer* m_PollTimer = nullptr;
+    int m_ListeningIndex = -1;
+    GameCubeAdapterControllerState m_PrevState = {};
+    int m_ListenTickCount = 0;
 };
 }
 

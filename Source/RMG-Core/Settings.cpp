@@ -1375,6 +1375,61 @@ static l_Setting get_setting(SettingsID settingId)
     case SettingsID::GCAInput_SwapZL:
         setting = {SETTING_SECTION_GCA, "GCAInput_SwapZL", true};
         break;
+    case SettingsID::GCAInput_Port1Enabled:
+        setting = {SETTING_SECTION_GCA, "Port1Enabled", true};
+        break;
+    case SettingsID::GCAInput_Port2Enabled:
+        setting = {SETTING_SECTION_GCA, "Port2Enabled", false};
+        break;
+    case SettingsID::GCAInput_Port3Enabled:
+        setting = {SETTING_SECTION_GCA, "Port3Enabled", false};
+        break;
+    case SettingsID::GCAInput_Port4Enabled:
+        setting = {SETTING_SECTION_GCA, "Port4Enabled", false};
+        break;
+
+    case SettingsID::GCAInput_Map_A:
+        setting = {SETTING_SECTION_GCA, "Map_A", 0};
+        break;
+    case SettingsID::GCAInput_Map_B:
+        setting = {SETTING_SECTION_GCA, "Map_B", 1};
+        break;
+    case SettingsID::GCAInput_Map_Start:
+        setting = {SETTING_SECTION_GCA, "Map_Start", 5};
+        break;
+    case SettingsID::GCAInput_Map_Z:
+        setting = {SETTING_SECTION_GCA, "Map_Z", 4};
+        break;
+    case SettingsID::GCAInput_Map_L:
+        setting = {SETTING_SECTION_GCA, "Map_L", 12};
+        break;
+    case SettingsID::GCAInput_Map_R:
+        setting = {SETTING_SECTION_GCA, "Map_R", 13};
+        break;
+    case SettingsID::GCAInput_Map_DpadUp:
+        setting = {SETTING_SECTION_GCA, "Map_DpadUp", 8};
+        break;
+    case SettingsID::GCAInput_Map_DpadDown:
+        setting = {SETTING_SECTION_GCA, "Map_DpadDown", 9};
+        break;
+    case SettingsID::GCAInput_Map_DpadLeft:
+        setting = {SETTING_SECTION_GCA, "Map_DpadLeft", 10};
+        break;
+    case SettingsID::GCAInput_Map_DpadRight:
+        setting = {SETTING_SECTION_GCA, "Map_DpadRight", 11};
+        break;
+    case SettingsID::GCAInput_Map_CUp:
+        setting = {SETTING_SECTION_GCA, "Map_CUp", 14};
+        break;
+    case SettingsID::GCAInput_Map_CDown:
+        setting = {SETTING_SECTION_GCA, "Map_CDown", 15};
+        break;
+    case SettingsID::GCAInput_Map_CLeft:
+        setting = {SETTING_SECTION_GCA, "Map_CLeft", 16};
+        break;
+    case SettingsID::GCAInput_Map_CRight:
+        setting = {SETTING_SECTION_GCA, "Map_CRight", 17};
+        break;
     }
 
     return setting;

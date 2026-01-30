@@ -41,6 +41,7 @@ enum class SettingsID
     GUI_CheckForUpdates,
     GUI_LastUpdateCheck,
     GUI_ConfirmExitWhileInGame,
+    GUI_DontAskRaphnetPluginSwitch,
     GUI_Version,
 
     // Netplay Settings
@@ -485,6 +486,9 @@ enum class SettingsID
     GCAInput_Map_CDown,
     GCAInput_Map_CLeft,
     GCAInput_Map_CRight,
+
+    // Internal Settings (not persisted to config file)
+    Internal_InputPluginSwitchRequested,
 
     Invalid
 };

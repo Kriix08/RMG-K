@@ -45,8 +45,8 @@ static float       l_TextRed         = 1.0f;
 static float       l_TextGreen       = 1.0f;
 static float       l_TextBlue        = 1.0f;
 static float       l_TextAlpha       = 1.0f;
-static int         l_MessageDuration = 6;
-static float       l_MessageScale    = 1.0f;
+static int         l_MessageDuration = 7;
+static float       l_MessageScale    = 1.25f;
 static size_t      l_KailleraChatMaxMessages = 5;
 static bool        l_FontsDirty      = true;
 static const float l_BaseFontSize    = 13.0f;
@@ -237,6 +237,11 @@ void OnScreenDisplayRender(void)
     ImGui::NewFrame();
     
     ImGuiIO& io = ImGui::GetIO();
+    float maxWrapWidth = io.DisplaySize.x - (l_MessagePaddingX * 2.0f);
+    if (maxWrapWidth < 0.0f)
+    {
+        maxWrapWidth = 0.0f;
+    }
 
     if (hasSystemMessage)
     {
@@ -265,7 +270,15 @@ void OnScreenDisplayRender(void)
         ImGui::PushStyleColor(ImGuiCol_Text,     ImVec4(l_TextRed, l_TextGreen, l_TextBlue, l_TextAlpha));
 
         ImGui::Begin("Message", nullptr, ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoInputs | ImGuiWindowFlags_NoNav | ImGuiWindowFlags_NoBringToFrontOnFocus | ImGuiWindowFlags_NoFocusOnAppearing);
+        if (maxWrapWidth > 0.0f)
+        {
+            ImGui::PushTextWrapPos(ImGui::GetCursorPosX() + maxWrapWidth);
+        }
         ImGui::Text("%s", l_Message.c_str());
+        if (maxWrapWidth > 0.0f)
+        {
+            ImGui::PopTextWrapPos();
+        }
         ImGui::End();
 
         ImGui::PopStyleColor(2);
@@ -316,7 +329,15 @@ void OnScreenDisplayRender(void)
 
             const std::string windowName = "Kaillera Chat##" + std::to_string(messageIndex);
             ImGui::Begin(windowName.c_str(), nullptr, ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoInputs | ImGuiWindowFlags_NoNav | ImGuiWindowFlags_NoBringToFrontOnFocus | ImGuiWindowFlags_NoFocusOnAppearing);
+            if (maxWrapWidth > 0.0f)
+            {
+                ImGui::PushTextWrapPos(ImGui::GetCursorPosX() + maxWrapWidth);
+            }
             ImGui::Text("%s", messageIter->message.c_str());
+            if (maxWrapWidth > 0.0f)
+            {
+                ImGui::PopTextWrapPos();
+            }
             const ImVec2 windowSize = ImGui::GetWindowSize();
             ImGui::End();
 

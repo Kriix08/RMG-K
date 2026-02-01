@@ -603,7 +603,7 @@
                  <item>
                   <widget class="QLabel" name="label_19">
                    <property name="text">
-                    <string>Max chat messages</string>
+                    <string>Max messages</string>
                    </property>
                   </widget>
                  </item>

@@ -24,8 +24,13 @@ void OnScreenDisplayLoadSettings(void);
 // sets the display size for the OSD
 bool OnScreenDisplaySetDisplaySize(int width, int height);
 
-// sets the current message to the OSD
+// adds a message to the OSD message queue
+// (pass an empty string to clear queued system messages)
 void OnScreenDisplaySetMessage(std::string message);
+
+// adds a Kaillera in-game chat message to the OSD message queue
+// (pass an empty string to clear queued chat messages)
+void OnScreenDisplaySetKailleraChatMessage(std::string message);
 
 // renders the OSD
 void OnScreenDisplayRender(void);

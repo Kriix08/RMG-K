@@ -128,13 +128,19 @@ static l_Setting get_setting(SettingsID settingId)
         setting = {SETTING_SECTION_GUI, "OnScreenDisplayPaddingY", 20};
         break;
     case SettingsID::GUI_OnScreenDisplayBackgroundColor:
-        setting = {SETTING_SECTION_GUI, "OnScreenDisplayBackgroundColor", std::string("0;0;0;127")};
+        setting = {SETTING_SECTION_GUI, "OnScreenDisplayBackgroundColor", std::string("0;0;0;180")};
         break;
     case SettingsID::GUI_OnScreenDisplayTextColor:
         setting = {SETTING_SECTION_GUI, "OnScreenDisplayTextColor", std::string("255;255;255;255")};
         break;
     case SettingsID::GUI_OnScreenDisplayDuration:
-        setting = {SETTING_SECTION_GUI, "OnScreenDisplayDuration", 3};
+        setting = {SETTING_SECTION_GUI, "OnScreenDisplayDuration", 7};
+        break;
+    case SettingsID::GUI_OnScreenDisplayScale:
+        setting = {SETTING_SECTION_GUI, "OnScreenDisplayScale", 1.25f};
+        break;
+    case SettingsID::GUI_OnScreenDisplayMaxMessages:
+        setting = {SETTING_SECTION_GUI, "OnScreenDisplayMaxMessages", 5};
         break;
     case SettingsID::GUI_AutoStartNetplayOnStartup:
         setting = {SETTING_SECTION_GUI, "AutoStartNetplayOnStartup", false};

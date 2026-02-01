@@ -1628,6 +1628,13 @@ void MainWindow::timerEvent(QTimerEvent *event)
 
 void MainWindow::on_EventFilter_KeyPressed(QKeyEvent *event)
 {
+#ifdef NETPLAY
+    if (this->handleNetplayChatKeyPress(event))
+    {
+        return;
+    }
+#endif // NETPLAY
+
     if (!CoreIsEmulationRunning())
     {
         QMainWindow::keyPressEvent(event);
@@ -1642,6 +1649,13 @@ void MainWindow::on_EventFilter_KeyPressed(QKeyEvent *event)
 
 void MainWindow::on_EventFilter_KeyReleased(QKeyEvent *event)
 {
+#ifdef NETPLAY
+    if (this->ui_NetplayChatInputActive)
+    {
+        return;
+    }
+#endif // NETPLAY
+
     if (!CoreIsEmulationRunning())
     {
         QMainWindow::keyReleaseEvent(event);
@@ -2476,6 +2490,9 @@ void MainWindow::on_Kaillera_GameEnded(void)
     CoreMarkKailleraGameInactive();
 
     OnScreenDisplaySetKailleraChatMessage("");
+#ifdef NETPLAY
+    this->closeNetplayChatPrompt();
+#endif // NETPLAY
 
     // Stop emulation when game ends (user dropped or was dropped)
     if (this->emulationThread->isRunning())
@@ -2483,6 +2500,136 @@ void MainWindow::on_Kaillera_GameEnded(void)
         CoreStopEmulation();
     }
 }
+
+#ifdef NETPLAY
+bool MainWindow::handleNetplayChatKeyPress(QKeyEvent *event)
+{
+    if (!CoreIsEmulationRunning())
+    {
+        return false;
+    }
+
+    if (this->kailleraSessionManager == nullptr ||
+        !this->kailleraSessionManager->isGameActive())
+    {
+        return false;
+    }
+
+    if (this->ui_NetplayChatInputActive)
+    {
+        const int key = event->key();
+        if ((key == Qt::Key_Escape) && !event->isAutoRepeat())
+        {
+            this->closeNetplayChatPrompt();
+            return true;
+        }
+
+        if ((key == Qt::Key_Return || key == Qt::Key_Enter) && !event->isAutoRepeat())
+        {
+            QString message = this->ui_NetplayChatInput.trimmed();
+            if (!message.isEmpty())
+            {
+                this->kailleraSessionManager->sendChatMessage(message);
+            }
+            this->closeNetplayChatPrompt();
+            return true;
+        }
+
+        if (key == Qt::Key_Backspace)
+        {
+            if (!this->ui_NetplayChatInput.isEmpty())
+            {
+                this->ui_NetplayChatInput.chop(1);
+                this->updateNetplayChatPrompt();
+            }
+            return true;
+        }
+
+        const QString text = event->text();
+        if (!text.isEmpty())
+        {
+            const int maxLength = 127;
+            if (this->ui_NetplayChatInput.size() < maxLength)
+            {
+                const QChar ch = text.at(0);
+                if (!ch.isNull() && (ch.isPrint() || ch.isSpace()))
+                {
+                    this->ui_NetplayChatInput.append(ch);
+                    this->updateNetplayChatPrompt();
+                }
+            }
+            return true;
+        }
+
+        return true;
+    }
+
+    if (event->isAutoRepeat())
+    {
+        return false;
+    }
+
+    QString keyBinding = QString::fromStdString(CoreSettingsGetStringValue(SettingsID::KeyBinding_NetplayChat));
+    if (keyBinding.isEmpty())
+    {
+        return false;
+    }
+
+    const int key = event->key();
+    QKeySequence expected(keyBinding);
+    QKeySequence pressed(key | event->modifiers());
+    if (expected.matches(pressed) == QKeySequence::ExactMatch)
+    {
+        this->ui_NetplayChatInputActive = true;
+        this->ui_NetplayChatInput.clear();
+        this->updateNetplayChatPrompt();
+        return true;
+    }
+
+    if (key == Qt::Key_Enter)
+    {
+        QKeySequence altPressed(Qt::Key_Return | event->modifiers());
+        if (expected.matches(altPressed) == QKeySequence::ExactMatch)
+        {
+            this->ui_NetplayChatInputActive = true;
+            this->ui_NetplayChatInput.clear();
+            this->updateNetplayChatPrompt();
+            return true;
+        }
+    }
+    else if (key == Qt::Key_Return)
+    {
+        QKeySequence altPressed(Qt::Key_Enter | event->modifiers());
+        if (expected.matches(altPressed) == QKeySequence::ExactMatch)
+        {
+            this->ui_NetplayChatInputActive = true;
+            this->ui_NetplayChatInput.clear();
+            this->updateNetplayChatPrompt();
+            return true;
+        }
+    }
+
+    return false;
+}
+
+void MainWindow::updateNetplayChatPrompt(void)
+{
+    if (!this->ui_NetplayChatInputActive)
+    {
+        return;
+    }
+
+    const std::string prompt = "> " + this->ui_NetplayChatInput.toStdString();
+    OnScreenDisplaySetInputPrompt(prompt);
+}
+
+void MainWindow::closeNetplayChatPrompt(void)
+{
+    this->ui_NetplayChatInputActive = false;
+    this->ui_NetplayChatInput.clear();
+    OnScreenDisplaySetInputPrompt("");
+}
+#endif // NETPLAY
 
 QString MainWindow::findRomByName(QString gameName)
 {

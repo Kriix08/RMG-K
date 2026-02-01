@@ -928,7 +928,7 @@
                      </item>
                     </layout>
                    </item>
-                   <item>
+                  <item>
                     <layout class="QHBoxLayout" name="horizontalLayout_78">
                      <item>
                       <widget class="QLabel" name="label_75">
@@ -945,11 +945,29 @@
                       </widget>
                      </item>
                     </layout>
-                   </item>
-                   <item>
-                    <layout class="QHBoxLayout" name="horizontalLayout_80">
-                     <item>
-                      <widget class="QLabel" name="label_77">
+                  </item>
+                  <item>
+                   <layout class="QHBoxLayout" name="horizontalLayout_120">
+                    <item>
+                     <widget class="QLabel" name="label_120">
+                      <property name="text">
+                       <string>Netplay Chat</string>
+                      </property>
+                     </widget>
+                    </item>
+                    <item>
+                     <widget class="KeybindButton" name="netplayChatKeyButton">
+                      <property name="text">
+                       <string/>
+                      </property>
+                     </widget>
+                    </item>
+                   </layout>
+                  </item>
+                  <item>
+                   <layout class="QHBoxLayout" name="horizontalLayout_80">
+                    <item>
+                     <widget class="QLabel" name="label_77">
                        <property name="text">
                         <string>Save State</string>
                        </property>

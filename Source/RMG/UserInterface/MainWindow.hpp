@@ -124,6 +124,8 @@ class MainWindow : public QMainWindow, private Ui::MainWindow
     Dialog::NetplaySessionDialog* netplaySessionDialog = nullptr;
     KailleraSessionManager* kailleraSessionManager = nullptr;
     bool ui_AutoStartNetplayOnStartupPending = false;
+    bool ui_NetplayChatInputActive = false;
+    QString ui_NetplayChatInput;
 #endif // NETPLAY
 
     bool ui_CheckRaphnetPluginMismatchPending = false;
@@ -184,6 +186,12 @@ class MainWindow : public QMainWindow, private Ui::MainWindow
     void on_EventFilter_KeyPressed(QKeyEvent *event);
     void on_EventFilter_KeyReleased(QKeyEvent *event);
     void on_EventFilter_FileDropped(QDropEvent *event);
+
+#ifdef NETPLAY
+    bool handleNetplayChatKeyPress(QKeyEvent *event);
+    void updateNetplayChatPrompt(void);
+    void closeNetplayChatPrompt(void);
+#endif // NETPLAY
 
     void on_QGuiApplication_applicationStateChanged(Qt::ApplicationState state);
  

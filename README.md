@@ -2,6 +2,9 @@
 
 Rosalie's Mupen GUI is a free and open-source mupen64plus front-end written in C++.
 This fork is focused around netplay with the Kaillera protocol.
+
+<a href='https://ko-fi.com/J3J21OOC74' target='_blank'><img height='36' style='border:0px;height:36px;' src='https://storage.ko-fi.com/cdn/kofi6.png?v=6' border='0' alt='Buy Me a Coffee at ko-fi.com' /></a>
+
 <p align="center">
 <img width="717" height="706" alt="image" src="https://github.com/user-attachments/assets/3cc981da-b9c1-4ed3-b9aa-ca081aa801a4" />
 </p>

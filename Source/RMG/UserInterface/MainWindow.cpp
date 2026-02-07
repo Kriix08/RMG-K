@@ -1436,11 +1436,15 @@ void MainWindow::checkForUpdates(bool silent, bool force)
         return;
     }
 
-    // only check for updates on the stable versions unless forced
+    // only check for updates on stable versions unless forced
     QString currentVersion = QString::fromStdString(CoreGetVersion());
-    if (!force && currentVersion.size() != 6)
+    if (!force)
     {
-        return;
+        static const QRegularExpression stableVersionRegex("^v?\\d+(?:\\.\\d+){0,2}$");
+        if (!stableVersionRegex.match(currentVersion).hasMatch())
+        {
+            return;
+        }
     }
 
     QString dateTimeFormat = "dd-MM-yyyy_hh:mm";

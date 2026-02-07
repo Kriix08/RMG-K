@@ -55,6 +55,8 @@ static float       l_MessageScale    = 1.25f;
 static size_t      l_KailleraChatMaxMessages = 5;
 static bool        l_FontsDirty      = true;
 static const float l_BaseFontSize    = 13.0f;
+static bool        l_InputPromptActive = false;
+static std::string l_InputPrompt;
 
 static void OnScreenDisplayUpdateFonts(void)
 {
@@ -112,6 +114,8 @@ void OnScreenDisplayShutdown(void)
     ImGui::DestroyContext();
 
     l_MessageQueue.clear();
+    l_InputPromptActive = false;
+    l_InputPrompt.clear();
     l_Initialized     = false;
     l_RenderingPaused = false;
 }
@@ -236,6 +240,24 @@ void OnScreenDisplaySetKailleraChatMessage(std::string message)
     }
 }
 
+void OnScreenDisplaySetInputPrompt(std::string message)
+{
+    if (!l_Initialized)
+    {
+        return;
+    }
+
+    if (message.empty())
+    {
+        l_InputPromptActive = false;
+        l_InputPrompt.clear();
+        return;
+    }
+
+    l_InputPromptActive = true;
+    l_InputPrompt = std::move(message);
+}
+
 void OnScreenDisplayRender(void)
 {
     if (!l_Initialized || l_RenderingPaused)
@@ -255,7 +277,7 @@ void OnScreenDisplayRender(void)
         l_MessageQueue.pop_front();
     }
 
-    const bool hasMessages = l_Enabled && !l_MessageQueue.empty();
+    const bool hasMessages = l_Enabled && (!l_MessageQueue.empty() || l_InputPromptActive);
 
     if (!hasMessages)
     {
@@ -271,6 +293,12 @@ void OnScreenDisplayRender(void)
     if (maxWrapWidth < 0.0f)
     {
         maxWrapWidth = 0.0f;
+    }
+
+    size_t visibleQueueCount = l_KailleraChatMaxMessages;
+    if (l_InputPromptActive && visibleQueueCount > 0)
+    {
+        visibleQueueCount -= 1;
     }
 
     ImGui::PushStyleColor(ImGuiCol_WindowBg, ImVec4(l_BackgroundRed, l_BackgroundGreen, l_BackgroundBlue, l_BackgroundAlpha));
@@ -309,8 +337,35 @@ void OnScreenDisplayRender(void)
     float offsetY = 0.0f;
     int messageIndex = 0;
 
+    if (l_InputPromptActive)
+    {
+        const float posY = anchorBottom ? (baseY - offsetY) : (baseY + offsetY);
+        ImGui::SetNextWindowPos(ImVec2(baseX, posY), ImGuiCond_Always, pivot);
+
+        ImGui::Begin("OSD Input", nullptr, ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoInputs | ImGuiWindowFlags_NoNav | ImGuiWindowFlags_NoBringToFrontOnFocus | ImGuiWindowFlags_NoFocusOnAppearing);
+        if (maxWrapWidth > 0.0f)
+        {
+            ImGui::PushTextWrapPos(ImGui::GetCursorPosX() + maxWrapWidth);
+        }
+        ImGui::Text("%s", l_InputPrompt.c_str());
+        if (maxWrapWidth > 0.0f)
+        {
+            ImGui::PopTextWrapPos();
+        }
+        const ImVec2 windowSize = ImGui::GetWindowSize();
+        ImGui::End();
+
+        offsetY += windowSize.y * stackSpacingFactor;
+    }
+
+    size_t renderedQueueCount = 0;
     for (auto messageIter = l_MessageQueue.rbegin(); messageIter != l_MessageQueue.rend(); ++messageIter, ++messageIndex)
     {
+        if (renderedQueueCount >= visibleQueueCount)
+        {
+            break;
+        }
+
         const float posY = anchorBottom ? (baseY - offsetY) : (baseY + offsetY);
         ImGui::SetNextWindowPos(ImVec2(baseX, posY), ImGuiCond_Always, pivot);
 
@@ -329,6 +384,7 @@ void OnScreenDisplayRender(void)
         ImGui::End();
 
         offsetY += windowSize.y * stackSpacingFactor;
+        renderedQueueCount++;
     }
 
     ImGui::PopStyleColor(2);

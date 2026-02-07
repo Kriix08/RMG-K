@@ -969,6 +969,7 @@ void SettingsDialog::commonHotkeySettings(SettingsDialogAction action)
         { this->pauseKeyButton, SettingsID::KeyBinding_Resume },
         { this->generateBitmapKeyButton, SettingsID::KeyBinding_Screenshot },
         { this->limitFPSKeyButton, SettingsID::KeyBinding_LimitFPS },
+        { this->netplayChatKeyButton, SettingsID::KeyBinding_NetplayChat },
         { this->saveStateKeyButton, SettingsID::KeyBinding_SaveState },
         { this->saveAsKeyButton, SettingsID::KeyBinding_SaveAs },
         { this->loadStateKeyButton, SettingsID::KeyBinding_LoadState },
